@@ -4,104 +4,721 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shot on iPhone Watermark</title>
+    <title>Shot on iPhone — Watermark & Story Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            background: #f5f5f5;
+        *,
+        *::before,
+        *::after {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
+        :root {
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --border: #e5e5ea;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #aeaeb2;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Header ── */
+        .site-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 1.75rem;
+            border-bottom: 1px solid var(--border);
+            gap: 1rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.4px;
+            color: var(--text-primary);
+        }
+
+        /* ── Tab pills ── */
+        .tab-pills {
+            background: #e8e8ed;
+            padding: 4px;
+            border-radius: 10px;
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .tab-pills .nav-link {
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 7px 16px;
+            transition: all 0.2s ease;
+            border: none;
+            line-height: 1.4;
+        }
+
+        .tab-pills .nav-link.active {
+            background: var(--card);
+            color: var(--text-primary);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-pills .nav-link:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .label-new {
+            display: inline-block;
+            background: var(--text-primary);
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+
+        /* ── Cards & Containers ── */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.2px;
+        }
+
+        .preview-area {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 460px;
+        }
+
+        .preview-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .preview-dim {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Canvas ── */
         #previewCanvas {
             max-width: 100%;
-            border: 1px solid #ddd;
+            height: auto;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            background: #fafafa;
+        }
+
+        /* ── Story mockup frame ── */
+        .story-frame {
+            position: relative;
+            width: 100%;
+            max-width: 340px;
+            aspect-ratio: 9 / 16;
+            background: #000;
+            border-radius: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 6px #1c1c1e;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        #storyCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .story-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 14px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .story-progress {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .story-progress-fill {
+            width: 100%;
+            height: 100%;
             background: #fff;
         }
 
-        .preview-wrap {
-            background: #fff;
-            padding: 1rem;
+        .story-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .story-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f77062 0%, #fe5196 100%);
+        }
+
+        .story-time {
+            opacity: 0.55;
+            font-weight: 400;
+            margin-left: 2px;
+        }
+
+        /* ── Form controls ── */
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .form-control,
+        .form-select {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+            border: 1px solid #d1d1d6;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--text-primary);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        .input-group-text {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: #f9f9fb;
+            border-color: #d1d1d6;
+        }
+
+        /* ── Buttons ── */
+        .btn-primary-custom {
+            background-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 9px 16px;
+            border: none;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            letter-spacing: -0.1px;
+        }
+
+        .btn-primary-custom:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+        }
+
+        .btn-primary-custom:disabled {
+            background-color: #c7c7cc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary-custom {
+            background-color: #f2f2f7;
+            color: var(--text-primary);
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 9px 16px;
+            border: none;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-secondary-custom:hover:not(:disabled) {
+            background-color: #e5e5ea;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary-custom:disabled {
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+        }
+
+        /* ── Source selector ── */
+        .source-box {
+            background: #f9f9fb;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .source-box .form-check-label {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── Slider labels ── */
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .slider-value {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .slider-hint {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* ── Color presets ── */
+        .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #d1d1d6;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0;
+            line-height: 0;
+        }
+
+        .color-dot:hover {
+            transform: scale(1.12);
+        }
+
+        .color-dot.active {
+            box-shadow: 0 0 0 2px var(--accent);
+            transform: scale(1.12);
+        }
+
+        .color-dot-label {
+            font-size: 8px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        /* ── Badges ── */
+        .tag-dark {
+            background: var(--text-primary);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 5px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            opacity: 0.35;
+        }
+
+        .empty-state p {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        /* ── Toggle switch label ── */
+        .form-check-label {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.82rem;
+        }
+
+        /* ── Footer hint ── */
+        .hint-footer {
+            font-size: 0.78rem;
+            color: var(--text-tertiary);
+            text-align: center;
+            margin-top: 14px;
+            margin-bottom: 0;
+            line-height: 1.5;
+        }
+
+        /* ── Section divider within panel ── */
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1rem 0;
         }
     </style>
 </head>
 
 <body>
     <div class="container py-4">
-        <h1 class="h3 mb-4">Shot on iPhone Watermark</h1>
+        <!-- Header -->
+        <header class="site-header">
+            <div class="brand">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+                </svg>
+                Shot on iPhone
+            </div>
 
-        <div class="row g-4">
-            <!-- Form -->
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h2 class="h6 mb-3">Pengaturan Watermark</h2>
+            <ul class="nav tab-pills" id="modeTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="watermark-tab" data-bs-toggle="pill" data-bs-target="#watermark-panel" type="button" role="tab">
+                        Watermark
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="story-tab" data-bs-toggle="pill" data-bs-target="#story-panel" type="button" role="tab">
+                        IG Story 9:16<span class="label-new">New</span>
+                    </button>
+                </li>
+            </ul>
+        </header>
 
-                        <div class="mb-3">
-                            <label class="form-label">Upload Foto</label>
-                            <input type="file" id="photoInput" class="form-control" accept="image/*">
-                        </div>
+        <!-- Tab Content -->
+        <div class="tab-content" id="modeTabsContent">
 
-                        <div class="mb-3">
-                            <label class="form-label">Model iPhone</label>
-                            <input type="text" id="deviceModel" class="form-control" value="iPhone 13">
-                        </div>
+            <!-- ═══════ TAB 1: WATERMARK ═══════ -->
+            <div class="tab-pane fade show active" id="watermark-panel" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="panel">
+                            <div class="panel-body">
+                                <h2 class="panel-title">Pengaturan Watermark</h2>
 
-                        <div class="mb-3">
-                            <label class="form-label">Tanggal & Jam</label>
-                            <input type="datetime-local" id="dateTime" class="form-control">
-                        </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Foto</label>
+                                    <input type="file" id="photoInput" class="form-control" accept="image/*">
+                                </div>
 
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label class="form-label">Focal Length (mm)</label>
-                                <input type="number" id="focalLength" class="form-control" value="26" min="1">
+                                <div class="mb-3">
+                                    <label class="form-label">Model Perangkat</label>
+                                    <input type="text" id="deviceModel" class="form-control" value="iPhone 13">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tanggal & Waktu</label>
+                                    <input type="datetime-local" id="dateTime" class="form-control">
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Focal Length</label>
+                                        <div class="input-group">
+                                            <input type="number" id="focalLength" class="form-control" value="26" min="1">
+                                            <span class="input-group-text">mm</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Aperture</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">f/</span>
+                                            <input type="number" id="aperture" class="form-control" value="1.6" step="0.1" min="0.1">
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">ISO</label>
+                                        <input type="number" id="iso" class="form-control" value="32" min="1">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Shutter Speed</label>
+                                        <input type="text" id="shutter" class="form-control" value="1/1284" placeholder="1/1284">
+                                    </div>
+                                </div>
+
+                                <div class="section-divider"></div>
+
+                                <div class="d-grid gap-2">
+                                    <button id="downloadBtn" class="btn btn-primary-custom" disabled>
+                                        Download Watermark
+                                    </button>
+                                    <button id="goToStoryBtn" class="btn btn-secondary-custom" disabled>
+                                        Buat versi IG Story
+                                    </button>
+                                </div>
                             </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label">Aperture (f)</label>
-                                <input type="number" id="aperture" class="form-control" value="1.6" step="0.1"
-                                    min="0.1">
-                            </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label">ISO</label>
-                                <input type="number" id="iso" class="form-control" value="32" min="1">
-                            </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label">Shutter Speed</label>
-                                <input type="text" id="shutter" class="form-control" value="1/1284"
-                                    placeholder="contoh: 1/1284">
-                            </div>
                         </div>
+                    </div>
 
-                        <button id="downloadBtn" class="btn btn-primary w-100" disabled>
-                            Download Gambar
-                        </button>
+                    <div class="col-lg-8">
+                        <div class="preview-area">
+                            <div class="w-100 d-flex justify-content-between align-items-center mb-3">
+                                <span class="preview-label">Preview</span>
+                                <span id="imgDimensions" class="preview-dim"></span>
+                            </div>
+                            <div id="watermarkEmptyPlaceholder" class="empty-state">
+                                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                                </svg>
+                                <p>Upload foto untuk melihat preview watermark.</p>
+                            </div>
+                            <canvas id="previewCanvas" style="display:none;"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Preview -->
-            <div class="col-lg-8">
-                <div class="preview-wrap">
-                    <p class="text-muted small mb-2">Preview</p>
-                    <canvas id="previewCanvas"></canvas>
+            <!-- ═══════ TAB 2: IG STORY 9:16 ═══════ -->
+            <div class="tab-pane fade" id="story-panel" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h2 class="panel-title mb-0">Pengaturan IG Story</h2>
+                                    <span class="tag-dark">Auto Simetris</span>
+                                </div>
+
+                                <!-- Sumber gambar -->
+                                <div class="source-box mb-3">
+                                    <label class="form-label d-block mb-2">Sumber Gambar</label>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="radio" name="storySourceType" id="srcFromWatermark" value="fromTab1" checked>
+                                        <label class="form-check-label" for="srcFromWatermark">
+                                            Dari hasil watermark
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="storySourceType" id="srcFromUpload" value="fromUpload">
+                                        <label class="form-check-label" for="srcFromUpload">
+                                            Upload foto lain yang sudah ber-watermark
+                                        </label>
+                                    </div>
+
+                                    <div id="storyUploadWrapper" class="mt-2" style="display: none;">
+                                        <input type="file" id="storyPhotoInput" class="form-control form-control-sm" accept="image/*">
+                                    </div>
+                                </div>
+
+                                <!-- Ukuran / margin -->
+                                <div class="mb-3">
+                                    <div class="slider-header">
+                                        <label class="form-label mb-0">Ukuran Foto</label>
+                                        <span class="slider-value" id="marginVal">88%</span>
+                                    </div>
+                                    <input type="range" class="form-range" id="storyWidthPercent" min="70" max="96" value="88">
+                                    <div class="slider-hint">Margin kiri dan kanan otomatis simetris.</div>
+                                </div>
+
+                                <!-- Corner radius -->
+                                <div class="mb-3">
+                                    <div class="slider-header">
+                                        <label class="form-label mb-0">Corner Radius</label>
+                                        <span class="slider-value" id="radiusVal">36px</span>
+                                    </div>
+                                    <input type="range" class="form-range" id="storyCornerRadius" min="0" max="80" value="36">
+                                </div>
+
+                                <!-- Posisi vertikal -->
+                                <div class="mb-3">
+                                    <div class="slider-header">
+                                        <label class="form-label mb-0">Posisi Vertikal</label>
+                                        <span class="slider-value" id="offsetVal">Tengah</span>
+                                    </div>
+                                    <input type="range" class="form-range" id="storyVerticalOffset" min="-25" max="25" value="0">
+                                </div>
+
+                                <div class="section-divider"></div>
+
+                                <!-- Background -->
+                                <div class="mb-3">
+                                    <label class="form-label d-block mb-2">Background</label>
+                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <button type="button" class="color-dot active" data-bg="solid" data-color="#000000" style="background:#000000;" title="Hitam"></button>
+                                        <button type="button" class="color-dot" data-bg="solid" data-color="#18181b" style="background:#18181b;" title="Charcoal"></button>
+                                        <button type="button" class="color-dot" data-bg="solid" data-color="#ffffff" style="background:#ffffff;" title="Putih"></button>
+                                        <button type="button" class="color-dot" data-bg="gradient" data-color="grad1" style="background:linear-gradient(180deg,#232526,#414345);" title="Gradient"></button>
+                                        <button type="button" class="color-dot" data-bg="blur" title="Blur" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+                                            <span class="color-dot-label">Blur</span>
+                                        </button>
+                                        <input type="color" id="storyCustomBgColor" class="form-control form-control-color border-0 p-0" value="#000000" title="Warna kustom" style="width:28px;height:28px;border-radius:50%;cursor:pointer;">
+                                    </div>
+                                </div>
+
+                                <!-- Shadow & resolusi -->
+                                <div class="row g-2 mb-3 align-items-center">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="storyShadow" checked>
+                                            <label class="form-check-label fw-semibold" for="storyShadow">Drop Shadow</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <select id="storyResolution" class="form-select form-select-sm">
+                                            <option value="1080">1080 x 1920</option>
+                                            <option value="2160">2160 x 3840</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="section-divider"></div>
+
+                                <div class="d-grid">
+                                    <button id="downloadStoryBtn" class="btn btn-primary-custom" disabled>
+                                        Download Story 9:16
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="col-lg-7">
+                        <div class="preview-area">
+                            <div class="w-100 d-flex justify-content-between align-items-center mb-3">
+                                <span class="preview-label">Preview</span>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="toggleOverlay" checked>
+                                    <label class="form-check-label" style="font-size:0.75rem;color:var(--text-tertiary);" for="toggleOverlay">Tampilkan UI Story</label>
+                                </div>
+                            </div>
+
+                            <div id="storyEmptyPlaceholder" class="empty-state">
+                                <svg class="empty-state-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
+                                </svg>
+                                <p>Buat watermark terlebih dahulu, atau upload foto yang sudah ber-watermark.</p>
+                            </div>
+
+                            <div class="story-frame" id="storyMockupWrapper" style="display: none;">
+                                <div class="story-overlay" id="storyOverlayHeader">
+                                    <div class="story-progress">
+                                        <div class="story-progress-fill"></div>
+                                    </div>
+                                    <div class="story-meta">
+                                        <div class="story-avatar"></div>
+                                        <span>your_username</span>
+                                        <span class="story-time">Just now</span>
+                                    </div>
+                                </div>
+                                <canvas id="storyCanvas"></canvas>
+                            </div>
+
+                            <p class="hint-footer">Rasio 9:16 dengan margin simetris dan sudut melengkung.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 
+    <canvas id="offscreenCanvas" style="display: none;"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // ── Elements ──
         const canvas = document.getElementById('previewCanvas');
         const ctx = canvas.getContext('2d');
+        const storyCanvas = document.getElementById('storyCanvas');
+        const storyCtx = storyCanvas.getContext('2d');
 
+        const downloadBtn = document.getElementById('downloadBtn');
+        const goToStoryBtn = document.getElementById('goToStoryBtn');
+        const downloadStoryBtn = document.getElementById('downloadStoryBtn');
+        const watermarkPlaceholder = document.getElementById('watermarkEmptyPlaceholder');
+        const storyPlaceholder = document.getElementById('storyEmptyPlaceholder');
+        const storyMockupWrapper = document.getElementById('storyMockupWrapper');
+        const storyOverlayHeader = document.getElementById('storyOverlayHeader');
+
+        // ── State ──
         let sourceImage = null;
+        let customStoryImage = null;
+        let storyBgMode = 'solid';
+        let storyBgColor = '#000000';
 
-        // Set default datetime = sekarang
+        // Default datetime
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('dateTime').value = now.toISOString().slice(0, 16);
 
-        // Apple logo SVG sebagai data URL (hitam)
+        // Apple logo SVG
         const appleLogoSvg = `
             <svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
@@ -109,8 +726,8 @@
         const appleLogo = new Image();
         appleLogo.src = 'data:image/svg+xml;base64,' + btoa(appleLogoSvg);
 
-        // Format tanggal: "20 Jul 2026 15.41.52"
         function formatDateTime(isoString) {
+            if (!isoString) return '';
             const d = new Date(isoString);
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const day = String(d.getDate()).padStart(2, '0');
@@ -118,11 +735,10 @@
             const year = d.getFullYear();
             const h = String(d.getHours()).padStart(2, '0');
             const m = String(d.getMinutes()).padStart(2, '0');
-            const s = String(d.getSeconds()).padStart(2, '0');
             return `${day} ${month} ${year} ${h}.${m}`;
         }
 
-        function getValues() {
+        function getWatermarkValues() {
             return {
                 device: document.getElementById('deviceModel').value || 'iPhone 13',
                 dateTime: document.getElementById('dateTime').value,
@@ -133,11 +749,29 @@
             };
         }
 
+        // ── Rounded rect helper ──
+        function drawRoundedRectPath(targetCtx, x, y, width, height, radius) {
+            radius = Math.min(radius, width / 2, height / 2);
+            if (radius < 0) radius = 0;
+            targetCtx.beginPath();
+            targetCtx.moveTo(x + radius, y);
+            targetCtx.lineTo(x + width - radius, y);
+            targetCtx.arcTo(x + width, y, x + width, y + radius, radius);
+            targetCtx.lineTo(x + width, y + height - radius);
+            targetCtx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+            targetCtx.lineTo(x + radius, y + height);
+            targetCtx.arcTo(x, y + height, x, y + height - radius, radius);
+            targetCtx.lineTo(x, y + radius);
+            targetCtx.arcTo(x, y, x + radius, y, radius);
+            targetCtx.closePath();
+        }
+
+        // ── Draw watermark (Tab 1) ──
         function drawWatermark() {
             if (!sourceImage) return;
 
             const img = sourceImage;
-            const barHeight = Math.max(72, Math.round(img.width * 0.08)); // ~8% lebar foto
+            const barHeight = Math.max(72, Math.round(img.width * 0.08));
             const padding = Math.round(barHeight * 0.25);
             const fontSize = Math.round(barHeight * 0.22);
             const smallFont = Math.round(barHeight * 0.16);
@@ -146,25 +780,21 @@
             canvas.width = img.width;
             canvas.height = img.height + barHeight;
 
-            // Gambar asli
             ctx.drawImage(img, 0, 0);
 
-            // Bar putih
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, img.height, img.width, barHeight);
 
-            const v = getValues();
+            const v = getWatermarkValues();
             const dateStr = formatDateTime(v.dateTime);
             const fontFamily = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 
             ctx.fillStyle = '#000000';
             ctx.textBaseline = 'middle';
 
-            // Logo Apple (kiri)
             const logoY = img.height + barHeight / 2 - logoSize / 2;
             ctx.drawImage(appleLogo, padding, logoY, logoSize, logoSize);
 
-            // Teks kiri: "Shot on iPhone 13" + tanggal
             const textX = padding + logoSize + padding * 0.6;
             const centerY = img.height + barHeight / 2;
 
@@ -180,7 +810,6 @@
             ctx.fillStyle = '#333333';
             ctx.fillText(dateStr, textX, centerY + smallFont * 0.9);
 
-            // Teks kanan: EXIF (2 baris)
             ctx.fillStyle = '#000000';
             ctx.font = `400 ${fontSize}px ${fontFamily}`;
             const line1 = `${v.focal} mm    ƒ ${v.aperture}`;
@@ -193,41 +822,243 @@
 
             ctx.fillText(line1, rightX, centerY - smallFont * 0.7);
             ctx.fillText(line2, rightX, centerY + smallFont * 0.9);
+
+            canvas.style.display = 'block';
+            watermarkPlaceholder.style.display = 'none';
+            document.getElementById('imgDimensions').textContent = `${canvas.width} × ${canvas.height}`;
+            downloadBtn.disabled = false;
+            goToStoryBtn.disabled = false;
+
+            if (document.getElementById('srcFromWatermark').checked) {
+                drawStory();
+            }
         }
 
-        // Upload foto
+        // ── Draw story (Tab 2) ──
+        function getActiveStorySource() {
+            if (document.getElementById('srcFromUpload').checked) {
+                return customStoryImage;
+            }
+            if (sourceImage && canvas.width > 0 && canvas.height > 0) {
+                return canvas;
+            }
+            return null;
+        }
+
+        function drawStory() {
+            const src = getActiveStorySource();
+            if (!src) {
+                storyCanvas.style.display = 'none';
+                storyMockupWrapper.style.display = 'none';
+                storyPlaceholder.style.display = 'block';
+                downloadStoryBtn.disabled = true;
+                return;
+            }
+
+            const baseWidth = parseInt(document.getElementById('storyResolution').value, 10) || 1080;
+            const storyWidth = baseWidth;
+            const storyHeight = Math.round(storyWidth * (16 / 9));
+
+            storyCanvas.width = storyWidth;
+            storyCanvas.height = storyHeight;
+
+            // Background
+            if (storyBgMode === 'blur') {
+                storyCtx.save();
+                storyCtx.filter = 'blur(45px) brightness(0.65)';
+                const scale = Math.max(storyWidth / src.width, storyHeight / src.height) * 1.15;
+                const sw = src.width * scale;
+                const sh = src.height * scale;
+                const sx = (storyWidth - sw) / 2;
+                const sy = (storyHeight - sh) / 2;
+                storyCtx.drawImage(src, sx, sy, sw, sh);
+                storyCtx.restore();
+
+                const vignette = storyCtx.createRadialGradient(
+                    storyWidth / 2, storyHeight / 2, storyWidth * 0.2,
+                    storyWidth / 2, storyHeight / 2, storyHeight * 0.7
+                );
+                vignette.addColorStop(0, 'rgba(0,0,0,0)');
+                vignette.addColorStop(1, 'rgba(0,0,0,0.5)');
+                storyCtx.fillStyle = vignette;
+                storyCtx.fillRect(0, 0, storyWidth, storyHeight);
+            } else if (storyBgMode === 'gradient') {
+                const grad = storyCtx.createLinearGradient(0, 0, 0, storyHeight);
+                grad.addColorStop(0, '#1f2124');
+                grad.addColorStop(0.5, '#121316');
+                grad.addColorStop(1, '#090a0c');
+                storyCtx.fillStyle = grad;
+                storyCtx.fillRect(0, 0, storyWidth, storyHeight);
+            } else {
+                storyCtx.fillStyle = storyBgColor;
+                storyCtx.fillRect(0, 0, storyWidth, storyHeight);
+            }
+
+            // Card size & symmetric position
+            const widthPercent = parseInt(document.getElementById('storyWidthPercent').value, 10) / 100;
+            const cardWidth = Math.round(storyWidth * widthPercent);
+            const cardHeight = Math.round(cardWidth * (src.height / src.width));
+            const cardX = Math.round((storyWidth - cardWidth) / 2);
+
+            const offsetPercent = parseInt(document.getElementById('storyVerticalOffset').value, 10) / 100;
+            const offsetY = Math.round(storyHeight * offsetPercent);
+            const cardY = Math.round((storyHeight - cardHeight) / 2) + offsetY;
+
+            const baseRadius = parseInt(document.getElementById('storyCornerRadius').value, 10);
+            const scaledRadius = Math.round(baseRadius * (storyWidth / 1080));
+
+            // Drop shadow
+            if (document.getElementById('storyShadow').checked) {
+                storyCtx.save();
+                storyCtx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                storyCtx.shadowBlur = Math.round(30 * (storyWidth / 1080));
+                storyCtx.shadowOffsetX = 0;
+                storyCtx.shadowOffsetY = Math.round(15 * (storyWidth / 1080));
+                storyCtx.fillStyle = '#ffffff';
+                drawRoundedRectPath(storyCtx, cardX, cardY, cardWidth, cardHeight, scaledRadius);
+                storyCtx.fill();
+                storyCtx.restore();
+            }
+
+            // Photo with rounded corners
+            storyCtx.save();
+            drawRoundedRectPath(storyCtx, cardX, cardY, cardWidth, cardHeight, scaledRadius);
+            storyCtx.clip();
+            storyCtx.drawImage(src, cardX, cardY, cardWidth, cardHeight);
+            storyCtx.restore();
+
+            storyCanvas.style.display = 'block';
+            storyMockupWrapper.style.display = 'flex';
+            storyPlaceholder.style.display = 'none';
+            downloadStoryBtn.disabled = false;
+        }
+
+        // ── Events ──
+
+        // Upload (Tab 1)
         document.getElementById('photoInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
                     sourceImage = img;
                     drawWatermark();
-                    document.getElementById('downloadBtn').disabled = false;
                 };
                 img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
         });
 
-        // Update preview saat form berubah
         ['deviceModel', 'dateTime', 'focalLength', 'aperture', 'iso', 'shutter'].forEach(id => {
             document.getElementById(id).addEventListener('input', drawWatermark);
         });
 
-        // Download
-        document.getElementById('downloadBtn').addEventListener('click', () => {
+        downloadBtn.addEventListener('click', () => {
             const link = document.createElement('a');
             link.download = 'shot-on-iphone.jpg';
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
         });
 
-        // Redraw setelah logo siap
-        appleLogo.onload = drawWatermark;
+        goToStoryBtn.addEventListener('click', () => {
+            const storyTabTrigger = new bootstrap.Tab(document.getElementById('story-tab'));
+            storyTabTrigger.show();
+            document.getElementById('srcFromWatermark').checked = true;
+            document.getElementById('storyUploadWrapper').style.display = 'none';
+            drawStory();
+        });
+
+        // Source toggle (Tab 2)
+        document.querySelectorAll('input[name="storySourceType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                document.getElementById('storyUploadWrapper').style.display =
+                    e.target.value === 'fromUpload' ? 'block' : 'none';
+                drawStory();
+            });
+        });
+
+        // Upload (Tab 2)
+        document.getElementById('storyPhotoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    customStoryImage = img;
+                    drawStory();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Sliders
+        document.getElementById('storyWidthPercent').addEventListener('input', (e) => {
+            document.getElementById('marginVal').textContent = `${e.target.value}%`;
+            drawStory();
+        });
+
+        document.getElementById('storyCornerRadius').addEventListener('input', (e) => {
+            document.getElementById('radiusVal').textContent = `${e.target.value}px`;
+            drawStory();
+        });
+
+        document.getElementById('storyVerticalOffset').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            const label = document.getElementById('offsetVal');
+            if (val === 0) label.textContent = 'Tengah';
+            else if (val < 0) label.textContent = `Atas ${Math.abs(val)}%`;
+            else label.textContent = `Bawah ${val}%`;
+            drawStory();
+        });
+
+        document.getElementById('storyShadow').addEventListener('change', drawStory);
+        document.getElementById('storyResolution').addEventListener('change', drawStory);
+
+        // Background presets
+        document.querySelectorAll('.color-dot').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
+                const target = e.currentTarget;
+                target.classList.add('active');
+                storyBgMode = target.dataset.bg;
+                if (storyBgMode === 'solid') {
+                    storyBgColor = target.dataset.color;
+                    document.getElementById('storyCustomBgColor').value = storyBgColor;
+                }
+                drawStory();
+            });
+        });
+
+        document.getElementById('storyCustomBgColor').addEventListener('input', (e) => {
+            document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
+            storyBgMode = 'solid';
+            storyBgColor = e.target.value;
+            drawStory();
+        });
+
+        // Overlay toggle
+        document.getElementById('toggleOverlay').addEventListener('change', (e) => {
+            storyOverlayHeader.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // Download story
+        downloadStoryBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'shot-on-iphone-story-9x16.jpg';
+            link.href = storyCanvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        });
+
+        // Redraw on tab switch
+        document.getElementById('story-tab').addEventListener('shown.bs.tab', drawStory);
+
+        appleLogo.onload = () => {
+            if (sourceImage) drawWatermark();
+        };
     </script>
 </body>
 
